@@ -37,6 +37,7 @@ const (
 	Doc                     Command = "gopls.doc"
 	EditGoDirective         Command = "gopls.edit_go_directive"
 	ExtractToNewFile        Command = "gopls.extract_to_new_file"
+	ExtractToPackage        Command = "gopls.extract_to_package"
 	FetchVulncheckResult    Command = "gopls.fetch_vulncheck_result"
 	FreeSymbols             Command = "gopls.free_symbols"
 	GCDetails               Command = "gopls.gc_details"
@@ -84,6 +85,7 @@ var Commands = []Command{
 	Doc,
 	EditGoDirective,
 	ExtractToNewFile,
+	ExtractToPackage,
 	FetchVulncheckResult,
 	FreeSymbols,
 	GCDetails,
@@ -199,6 +201,12 @@ func Dispatch(ctx context.Context, params *protocol.ExecuteCommandParams, s Inte
 			return nil, err
 		}
 		return nil, s.ExtractToNewFile(ctx, a0)
+	case ExtractToPackage:
+		var a0 ExtractToPackageArgs
+		if err := UnmarshalArgs(params.Arguments, &a0); err != nil {
+			return nil, err
+		}
+		return nil, s.ExtractToPackage(ctx, a0)
 	case FetchVulncheckResult:
 		var a0 URIArg
 		if err := UnmarshalArgs(params.Arguments, &a0); err != nil {
@@ -471,6 +479,14 @@ func NewExtractToNewFileCommand(title string, a0 protocol.Location) *protocol.Co
 	return &protocol.Command{
 		Title:     title,
 		Command:   ExtractToNewFile.String(),
+		Arguments: MustMarshalArgs(a0),
+	}
+}
+
+func NewExtractToPackageCommand(title string, a0 ExtractToPackageArgs) *protocol.Command {
+	return &protocol.Command{
+		Title:     title,
+		Command:   ExtractToPackage.String(),
 		Arguments: MustMarshalArgs(a0),
 	}
 }

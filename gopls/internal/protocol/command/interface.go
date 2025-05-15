@@ -158,6 +158,11 @@ type Interface interface {
 	// Used by the code action of the same name.
 	ExtractToNewFile(context.Context, protocol.Location) error
 
+	// ExtractToPackage: Move selected declarations to a new package
+	//
+	// Used by the code action of the same name.
+	ExtractToPackage(context.Context, ExtractToPackageArgs) error
+
 	// StartDebugging: Start the gopls debug server
 	//
 	// Start the gopls debug server if it isn't running, and return the debug
@@ -401,6 +406,15 @@ type GoGetPackageArgs struct {
 	// The package to go get.
 	Pkg        string
 	AddRequire bool
+}
+
+type ExtractToPackageArgs struct {
+	// Range being extracted
+	Loc protocol.Location
+	// Destination file URI
+	URI protocol.DocumentURI
+	// Destination import path (if non-relative) - may be empty
+	ImportPath string
 }
 
 type AddImportArgs struct {

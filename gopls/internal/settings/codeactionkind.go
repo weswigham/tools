@@ -113,6 +113,7 @@ const (
 	RefactorExtractVariable    protocol.CodeActionKind = "refactor.extract.variable"
 	RefactorExtractVariableAll protocol.CodeActionKind = "refactor.extract.variable-all"
 	RefactorExtractToNewFile   protocol.CodeActionKind = "refactor.extract.toNewFile"
+	RefactorExtractToPackage   protocol.CodeActionKind = "refactor.extract.toPackage"
 
 	// Note: add new kinds to:
 	// - the SupportedCodeActions map in default.go

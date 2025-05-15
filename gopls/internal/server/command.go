@@ -1130,6 +1130,19 @@ func (c *commandHandler) ExtractToNewFile(ctx context.Context, args protocol.Loc
 	})
 }
 
+func (c *commandHandler) ExtractToPackage(ctx context.Context, args command.ExtractToPackageArgs) error {
+	return c.run(ctx, commandConfig{
+		progress: "Extract to a new package",
+		forURI:   args.Loc.URI,
+	}, func(ctx context.Context, deps commandDeps) error {
+		changes, err := golang.ExtractToPackage(ctx, deps.snapshot, deps.fh, args.Loc.Range, args.URI, args.ImportPath)
+		if err != nil {
+			return err
+		}
+		return applyChanges(ctx, c.s.client, changes)
+	})
+}
+
 func (c *commandHandler) StartDebugging(ctx context.Context, args command.DebuggingArgs) (result command.DebuggingResult, _ error) {
 	addr := args.Addr
 	if addr == "" {

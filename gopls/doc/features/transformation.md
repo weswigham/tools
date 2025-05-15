@@ -78,6 +78,7 @@ Gopls supports the following code actions:
 - [`refactor.extract.function`](#extract)
 - [`refactor.extract.method`](#extract)
 - [`refactor.extract.toNewFile`](#extract.toNewFile)
+- [`refactor.extract.toPackage`](#extract.toPackage)
 - [`refactor.extract.variable`](#extract)
 - [`refactor.extract.variable-all`](#extract)
 - [`refactor.inline.call`](#refactor.inline.call)
@@ -449,6 +450,20 @@ first token of the declaration, such as `func` or `type`.
 
 ![Before: select the declarations to move](../assets/extract-to-new-file-before.png)
 ![After: the new file is based on the first symbol name](../assets/extract-to-new-file-after.png)
+
+<a name='refactor.extract.toPackage'></a>
+## `refactor.extract.toPackage`: Extract declarations to another package
+
+(Available from gopls/v0.18.3)
+
+If you select one or more top-level declarations, gopls will offer an
+"Extract declarations to package X" code action that moves the selected
+declarations into a new file in package X whose name is based on the
+first declared symbol.
+Import declarations are created as needed. References to the selected
+exports are updated to refer to the new location as needed.
+Gopls also offers this code action when the selection is just the
+first token of the declaration, such as `func` or `type`.
 
 <a name='refactor.inline.call'></a>
 

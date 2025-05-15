@@ -9,8 +9,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/token"
 	"go/types"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -248,6 +250,7 @@ var codeActionProducers = [...]codeActionProducer{
 	{kind: settings.RefactorExtractFunction, fn: refactorExtractFunction},
 	{kind: settings.RefactorExtractMethod, fn: refactorExtractMethod},
 	{kind: settings.RefactorExtractToNewFile, fn: refactorExtractToNewFile},
+	{kind: settings.RefactorExtractToPackage, fn: refactorExtractToPackage},
 	{kind: settings.RefactorExtractConstant, fn: refactorExtractVariable, needPkg: true},
 	{kind: settings.RefactorExtractVariable, fn: refactorExtractVariable, needPkg: true},
 	{kind: settings.RefactorExtractConstantAll, fn: refactorExtractVariableAll, needPkg: true},
@@ -556,6 +559,62 @@ func refactorExtractToNewFile(ctx context.Context, req *codeActionsRequest) erro
 	if canExtractToNewFile(req.pgf, req.start, req.end) {
 		cmd := command.NewExtractToNewFileCommand("Extract declarations to new file", req.loc)
 		req.addCommandAction(cmd, false)
+	}
+	return nil
+}
+
+// refactorExtractToPackage produces "Extract declarations to package X" code actions.
+// See [server.commandHandler.ExtractToPackage] for command implementation.
+func refactorExtractToPackage(ctx context.Context, req *codeActionsRequest) error {
+	if canExtractToNewPackage(req.pgf, req.start, req.end) {
+		cmd := command.NewExtractToPackageCommand("Extract declarations to new child package", command.ExtractToPackageArgs{
+			Loc: req.loc,
+			URI: protocol.URIFromPath(filepath.Join(req.loc.URI.DirPath(), "newpkg")),
+		})
+		req.addCommandAction(cmd, false)
+
+		cmd2 := command.NewExtractToPackageCommand("Extract declarations to new sibling package", command.ExtractToPackageArgs{
+			Loc: req.loc,
+			URI: protocol.URIFromPath(filepath.Join(req.loc.URI.DirPath(), "..", "newpkg")),
+		})
+		req.addCommandAction(cmd2, false)
+
+		cmd3 := command.NewExtractToPackageCommand("Extract declarations to parent package", command.ExtractToPackageArgs{
+			Loc: req.loc,
+			URI: protocol.URIFromPath(filepath.Join(req.loc.URI.DirPath(), "..")),
+		})
+		req.addCommandAction(cmd3, false)
+
+		data, err := req.snapshot.MetadataForFile(ctx, req.loc.URI, false)
+		if err != nil {
+			return nil
+		}
+
+		offered := make(map[string]struct{})
+		// offer to extract into any "upstream" package within the workspace
+		for _, pkg := range data {
+			for spec, id := range pkg.DepsByImpPath {
+				if id == "" || !req.snapshot.IsWorkspacePackage(id) {
+					continue
+				}
+				// TODO: avoid offering extraction to upstream packages which would cause an import cycle in the extracted code
+				if _, present := offered[string(spec)]; !present {
+					offered[string(spec)] = struct{}{}
+					res, err := build.Import(string(spec), pkg.Module.Dir, build.FindOnly)
+					if err != nil || len(res.Dir) == 0 {
+						continue
+					}
+
+					msg := fmt.Sprintf("Extract declarations to package \"%s\"", string(spec))
+					cmd := command.NewExtractToPackageCommand(msg, command.ExtractToPackageArgs{
+						Loc:        req.loc,
+						URI:        protocol.URIFromPath(res.Dir),
+						ImportPath: string(spec),
+					})
+					req.addCommandAction(cmd, false)
+				}
+			}
+		}
 	}
 	return nil
 }
